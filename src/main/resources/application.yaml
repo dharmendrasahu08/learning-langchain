@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: learning
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/langchain_db}
+server:
+  port: 8899
+
+langchain4j:
+  open-ai:
+    chat-model:
+      api-key: ${API_KEY}
+      model-name: gpt-4o-mini
+      log-request: true
+      log-response: true

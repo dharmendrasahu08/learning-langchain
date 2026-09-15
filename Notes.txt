@@ -1,0 +1,39 @@
+Tips:1: Reduces hallucination, but it does not guarantee it.
+    Layer 1:Prompt rules
+    Layer 2:Structured output
+    Layer 3:Java validation
+    Layer 4:Trusted database/application data
+    Layer 5:Business rules
+
+Tool:A LangChain4j Tool is a controlled bridge that allows the LLM to request an operation
+from your Java application, while the actual operation is executed by your application—not by the LLM.
+
+Memory ID tells us "whose conversation?" Employee ID tells us "which employee?"
+
+
+http://localhost:8899/conversation?userName=DKS002&message=Please provide the information for employee EMP002
+http://localhost:8899/conversation?userName=DKS002&message=Please provide the information
+
+Test 1
+userName=DKS002
+message=Please provide the information for employee EMP002
+The response was about EMP002.
+
+Test 2
+userName=DKS002
+message=Please provide the information
+The response was about DKS002.
+
+@MemoryId' actaul purpose:
+DKS002
+   ↓
+ChatMemoryProvider
+   ↓
+"DKS002" wali conversation history
+
+
+Remember this one sentence:
+@MemoryId identifies the conversation; it does not identify the employee.
+
+And another:
+The LLM can use conversation history to infer an employee ID, but that is different from the application securely knowing the employee's identity.
