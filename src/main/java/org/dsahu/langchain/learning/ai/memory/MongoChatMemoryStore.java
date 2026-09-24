@@ -1,4 +1,4 @@
-package org.dsahu.langchain.learning.repo;
+package org.dsahu.langchain.learning.ai.memory;
 
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ChatMessageJsonCodec;
@@ -6,11 +6,12 @@ import dev.langchain4j.data.message.JacksonChatMessageJsonCodec;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
-import org.dsahu.langchain.learning.entity.ai.ChatMemoryDocument;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
 @Component
+@Slf4j
 public class MongoChatMemoryStore implements ChatMemoryStore {
 
     private final MongoTemplate mongoTemplate;
@@ -23,7 +24,7 @@ public class MongoChatMemoryStore implements ChatMemoryStore {
 
     @Override
     public List<ChatMessage> getMessages(Object memoryId) {
-
+        log.info("getMessages#Loading chat memory for memoryId={}", memoryId);
         ChatMemoryDocument document =
                 mongoTemplate.findById(
                         memoryId.toString(),
@@ -31,19 +32,23 @@ public class MongoChatMemoryStore implements ChatMemoryStore {
                 );
 
         if (document == null) {
+            log.info("getMessages#No chat memory found for memoryId={}", memoryId);
             return List.of();
         }
 
-        return codec.messagesFromJson(
+
+        List<ChatMessage> messages= codec.messagesFromJson(
                 document.getMessagesJson()
         );
+        log.info("getMessages# Loaded {} messages for memoryId={}",messages.size(),memoryId);
+        return messages;
     }
 
     @Override
     public void updateMessages(
             Object memoryId,
             List<ChatMessage> messages) {
-
+        log.info("Saving {} messages for memoryId={}", messages.size(),memoryId);
         String messagesJson =
                 codec.messagesToJson(messages);
 
@@ -52,7 +57,6 @@ public class MongoChatMemoryStore implements ChatMemoryStore {
                         memoryId.toString(),
                         messagesJson
                 );
-
         mongoTemplate.save(document);
     }
 

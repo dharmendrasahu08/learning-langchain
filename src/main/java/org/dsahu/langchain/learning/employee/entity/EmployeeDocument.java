@@ -1,6 +1,6 @@
-package org.dsahu.langchain.learning.entity.business;
+package org.dsahu.langchain.learning.employee.entity;
 
-import org.dsahu.langchain.learning.constant.CollectionName;
+import org.dsahu.langchain.learning.common.constant.CollectionName;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 

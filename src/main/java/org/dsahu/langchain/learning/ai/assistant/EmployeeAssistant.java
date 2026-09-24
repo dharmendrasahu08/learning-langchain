@@ -1,17 +1,16 @@
-package org.dsahu.langchain.learning.service.aiservice;
+package org.dsahu.langchain.learning.ai.assistant;
 
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.spring.AiService;
-import org.dsahu.langchain.learning.model.Employee;
+import org.dsahu.langchain.learning.employee.dto.Employee;
 
 @AiService(tools = "employeeTools")
 public interface EmployeeAssistant {
 
     @UserMessage("""
         Extract the employee information from the following text.
-
         Text:
         {{it}}
         """)

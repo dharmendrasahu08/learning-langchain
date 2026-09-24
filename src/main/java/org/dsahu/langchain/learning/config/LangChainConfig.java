@@ -3,19 +3,13 @@ package org.dsahu.langchain.learning.config;
 
 import org.springframework.context.annotation.Configuration;
 
-import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.ChatMessageJsonCodec;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.mongodb.core.MongoTemplate;
-
-import java.util.List;
 
 @Configuration
-public class ChatMemoryConfig {
+public class LangChainConfig {
     //Configuration for in-momory chat
     /*@Bean(name="chatMemory")
     public ChatMemory chatMemory() {

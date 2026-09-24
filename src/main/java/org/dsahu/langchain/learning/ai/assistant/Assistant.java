@@ -1,4 +1,4 @@
-package org.dsahu.langchain.learning.service.aiservice;
+package org.dsahu.langchain.learning.ai.assistant;
 
 
 import dev.langchain4j.service.SystemMessage;
