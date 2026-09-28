@@ -1,0 +1,82 @@
+POST http://localhost:8899/api/resumes
+REQUEST_BODY
+{
+  "originalFileName": "kenji-takahashi-resume.pdf",
+  "storageReference": "local/resumes/kenji-takahashi-resume.pdf",
+  "extractedText": "Operations professional with 12 years of experience in supply chain management, process optimization and logistics.",
+  "profile": {
+    "name": "Kenji Takahashi",
+    "email": "kenji.takahashi@example.com",
+    "phoneNum": "+81-3-5550-0146",
+    "profileType": "OPERATION",
+    "profileSummary": "Operations leader specializing in supply chain optimization, logistics and process improvement.",
+    "yearsOfExperience": 12,
+    "skills": [
+      "Supply Chain Management",
+      "Logistics",
+      "Process Improvement",
+      "Vendor Management",
+      "Operations Management"
+    ],
+    "domains": [
+      "Automotive",
+      "Logistics"
+    ],
+    "pastCompanies": [
+      "Toyota",
+      "DHL"
+    ],
+    "location": "Tokyo",
+    "country": "Japan",
+    "qualification": "MBA",
+    "specialization": "Supply Chain Management",
+    "institute": "University of Tokyo",
+    "certifications": [
+      "Lean Six Sigma Black Belt"
+    ],
+    "appliedPosition": "Operations Manager",
+    "appliedDate": "2026-08-25"
+  }
+}
+
+RESPONSE_BODY:
+{
+  "id": "6ab9d4b5b7a1e11fad5768ec",
+  "originalFileName": "kenji-takahashi-resume.pdf",
+  "storageReference": "local/resumes/kenji-takahashi-resume.pdf",
+  "extractedText": "Operations professional with 12 years of experience in supply chain management, process optimization and logistics.",
+  "profile": {
+    "name": "Kenji Takahashi",
+    "email": "kenji.takahashi@example.com",
+    "phoneNum": null,
+    "profileType": "OPERATION",
+    "profileSummary": "Operations leader specializing in supply chain optimization, logistics and process improvement.",
+    "yearsOfExperience": 12.0,
+    "skills": [
+      "Supply Chain Management",
+      "Logistics",
+      "Process Improvement",
+      "Vendor Management",
+      "Operations Management"
+    ],
+    "domains": [
+      "Automotive",
+      "Logistics"
+    ],
+    "pastCompanies": [
+      "Toyota",
+      "DHL"
+    ],
+    "location": "Tokyo",
+    "country": "Japan",
+    "qualification": "MBA",
+    "specialization": "Supply Chain Management",
+    "institute": "University of Tokyo",
+    "certifications": [
+      "Lean Six Sigma Black Belt"
+    ],
+    "appliedPosition": "Operations Manager",
+    "appliedDate": "2026-08-25"
+  },
+  "uploadedAt": "2026-09-28T08:15:09.6901243"
+}

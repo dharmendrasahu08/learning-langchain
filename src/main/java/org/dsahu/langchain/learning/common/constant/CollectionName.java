@@ -5,4 +5,6 @@ public class CollectionName {
     public static final String CHAT_MEMORY = "chat_memory";
     public static final String EMPLOYEES = "employee";
     public static final String USERS = "users";
+    public static final String RESUME = "resume_documents";
+    
 }
