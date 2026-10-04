@@ -2,13 +2,13 @@ package org.dsahu.langchain.learning.resume.dto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import lombok.Builder;
 import java.util.List;
+
+import lombok.Builder;
 
 @Builder
 public record ResumeResponse(
-
-        String id,
+        String profileId,
 
         String originalFileName,
 

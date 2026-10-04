@@ -1,17 +1,17 @@
 package org.dsahu.langchain.learning.resume.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 import org.dsahu.langchain.learning.common.constant.CollectionName;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
@@ -22,8 +22,11 @@ public class ResumeDocument {
 
     @Id
     private String id;
+    
+    private String profileId;
 
     private String originalFileName;
+    
 
     /**
      * Reference to the physical resume file.

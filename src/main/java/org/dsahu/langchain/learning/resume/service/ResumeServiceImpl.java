@@ -1,19 +1,28 @@
 package org.dsahu.langchain.learning.resume.service;
 
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+import org.dsahu.langchain.learning.common.exception.ResumeNotFoundException;
 import org.dsahu.langchain.learning.resume.dto.ResumeCreateRequest;
 import org.dsahu.langchain.learning.resume.dto.ResumeResponse;
+import org.dsahu.langchain.learning.resume.dto.ResumeSearchRequest;
 import org.dsahu.langchain.learning.resume.entity.ResumeDocument;
 import org.dsahu.langchain.learning.resume.repository.ResumeRepository;
+import org.dsahu.langchain.learning.resume.repository.ResumeSearchRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import dev.langchain4j.data.embedding.Embedding;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class ResumeServiceImpl implements ResumeService {
 
     private final ResumeRepository resumeRepository;
+    private final ResumeSearchRepository resumeSearchRepository;
+    private final CandidateEmbeddingService candidateEmbeddingService;
 
     @Override
     public ResumeResponse create(ResumeCreateRequest request) {
@@ -43,6 +52,7 @@ public class ResumeServiceImpl implements ResumeService {
                 .originalFileName(request.originalFileName())
                 .storageReference(request.storageReference())
                 .extractedText(request.extractedText())
+                .profileId(UUID.randomUUID().toString())
                 .profile(profile)
                 .uploadedAt(LocalDateTime.now())
                 .build();
@@ -50,6 +60,32 @@ public class ResumeServiceImpl implements ResumeService {
         ResumeDocument saved = resumeRepository.save(document);
 
         return toResponse(saved);
+    }
+    
+    @Override
+    public List<ResumeResponse> findAll() {
+
+        return resumeRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+    
+    @Override
+    public ResumeResponse findByProfileId(String profileId) {
+
+        ResumeDocument document = resumeRepository.findByProfileId(profileId)
+                .orElseThrow(() -> new ResumeNotFoundException("Resume not found with profileId: " + profileId));
+
+        return toResponse(document);
+    }
+    
+    @Override
+    public List<ResumeResponse> search(ResumeSearchRequest request) {
+        return resumeSearchRepository.search(request)
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     private ResumeResponse toResponse(ResumeDocument document) {
@@ -77,7 +113,7 @@ public class ResumeServiceImpl implements ResumeService {
                         .build();
 
         return ResumeResponse.builder()
-                .id(document.getId())
+                .profileId(document.getProfileId())
                 .originalFileName(document.getOriginalFileName())
                 .storageReference(document.getStorageReference())
                 .extractedText(document.getExtractedText())
@@ -85,4 +121,15 @@ public class ResumeServiceImpl implements ResumeService {
                 .uploadedAt(document.getUploadedAt())
                 .build();
     }
+    
+    @Override
+    public Embedding createEmbedding(String id) {
+
+        ResumeDocument document = resumeRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResumeNotFoundException("Resume not found with id: " + id));
+
+        return candidateEmbeddingService.createEmbedding(document.getProfile());
+    }
+    
 }

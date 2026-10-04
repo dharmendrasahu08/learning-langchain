@@ -4,6 +4,7 @@ spring:
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/langchain_db}
+      uuid-representation: standard
 server:
   port: 8899
 
@@ -14,7 +15,15 @@ logging:
 langchain4j:
   open-ai:
     chat-model:
-      api-key: ${OPEN_AI_API_KEY}
+      api-key: ${OPENAI_API_KEY}
       model-name: gpt-4o-mini
       log-request: true
       log-response: true
+    # Add this block for the embedding model
+    embedding-model:
+      api-key: ${OPENAI_API_KEY}
+      model-name: text-embedding-3-small
+
+qdrant:
+  host: localhost
+  grpc-port: 6334
