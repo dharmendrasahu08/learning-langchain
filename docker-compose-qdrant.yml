@@ -1,0 +1,20 @@
+#docker compose -f docker-compose-qdrant.yml up -d
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+
+    restart: unless-stopped
+
+    ports:
+      # REST API + Web Dashboard
+      - "127.0.0.1:6333:6333"
+      # gRPC API
+      - "127.0.0.1:6334:6334"
+
+    volumes:
+      # Persist Qdrant data
+      - qdrant_storage:/qdrant/storage
+
+volumes:
+  qdrant_storage:
