@@ -44,6 +44,97 @@ public class CandidateQdrantServiceImpl
     private final ResumeRepository resumeRepository;
 
     @Override
+    public void batchUpsertCandidates(
+            List<ResumeDocument> documents) {
+
+        log.info(
+                "Starting batch upsert of {} candidates into Qdrant",
+                documents.size());
+
+        if (documents.isEmpty()) {
+            log.info("No candidates available for batch upsert");
+            return;
+        }
+
+        List<PointStruct> points = documents.stream()
+                .filter(document -> document.getProfile() != null)
+                .map(this::buildCandidatePoint)
+                .toList();
+
+        try {
+
+            qdrantClient.upsertAsync(
+                    COLLECTION_NAME,
+                    points
+            ).get();
+
+            log.info(
+                    "Batch upsert completed successfully. Candidates upserted: {}",
+                    points.size());
+
+        } catch (InterruptedException e) {
+
+            Thread.currentThread().interrupt();
+
+            throw new IllegalStateException(
+                    "Interrupted while batch upserting candidates",
+                    e);
+
+        } catch (ExecutionException e) {
+
+            throw new IllegalStateException(
+                    "Failed to batch upsert candidates",
+                    e);
+        }
+    }
+    
+    private PointStruct buildCandidatePoint(
+            ResumeDocument document) {
+
+        String profileId = document.getProfileId();
+
+        ResumeDocument.CandidateProfile profile =
+                document.getProfile();
+
+        Embedding embedding =
+                candidateEmbeddingService.createEmbedding(profile);
+
+        UUID qdrantPointId =
+                UUID.nameUUIDFromBytes(
+                        profileId.getBytes(StandardCharsets.UTF_8));
+
+        return PointStruct.newBuilder()
+                .setId(id(qdrantPointId))
+                .setVectors(vectors(embedding.vectorAsList()))
+                .putAllPayload(Map.of(
+                        "profileId", value(profileId),
+                        "name", value(profile.getName()),
+                        "profileType", value(profile.getProfileType()),
+                        "country", value(profile.getCountry()),
+                        "location", value(profile.getLocation())
+                ))
+                .build();
+    }
+    
+    @Override
+    public void syncCandidatesToQdrant() {
+
+        log.info("Starting candidate synchronization from MongoDB to Qdrant");
+
+        List<ResumeDocument> documents =
+                resumeRepository.findByIsSyncedToVectorDbFalse();
+
+        log.info(
+                "Candidates found in MongoDB: {}",
+                documents.size());
+
+        batchUpsertCandidates(documents);
+
+        log.info(
+                "Candidate synchronization completed");
+    }
+    
+    @Override
     public void createCollection() {
         log.info("createCollection#Creating Qdrant collection: {}", COLLECTION_NAME);
         try {
@@ -213,8 +304,8 @@ public class CandidateQdrantServiceImpl
 		        .specialization(document.getProfile().getSpecialization())
 		        .institute(document.getProfile().getInstitute())
 		        .certifications(document.getProfile().getCertifications())
-		        .appliedPosition(document.getProfile().getAppliedPosition())
 		        .score(result.getScore())
 		        .build();
 	}
+	
 }

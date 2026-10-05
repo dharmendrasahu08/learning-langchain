@@ -11,6 +11,10 @@ import org.dsahu.langchain.learning.resume.dto.ResumeSearchRequest;
 import org.dsahu.langchain.learning.resume.entity.ResumeDocument;
 import org.dsahu.langchain.learning.resume.repository.ResumeRepository;
 import org.dsahu.langchain.learning.resume.repository.ResumeSearchRepository;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import dev.langchain4j.data.embedding.Embedding;
@@ -23,6 +27,7 @@ public class ResumeServiceImpl implements ResumeService {
     private final ResumeRepository resumeRepository;
     private final ResumeSearchRepository resumeSearchRepository;
     private final CandidateEmbeddingService candidateEmbeddingService;
+    private final MongoTemplate mongoTemplate;
 
     @Override
     public ResumeResponse create(ResumeCreateRequest request) {
@@ -130,6 +135,26 @@ public class ResumeServiceImpl implements ResumeService {
                         new ResumeNotFoundException("Resume not found with id: " + id));
 
         return candidateEmbeddingService.createEmbedding(document.getProfile());
+    }
+    
+    public void markAsSyncedToVectorDb(List<String> profileIds) {
+
+        if (profileIds.isEmpty()) {
+            return;
+        }
+
+        Query query = new Query(
+                Criteria.where("profileId").in(profileIds)
+        );
+
+        Update update = new Update()
+                .set("isSyncedToVectorDb", true);
+
+        mongoTemplate.updateMulti(
+                query,
+                update,
+                ResumeDocument.class
+        );
     }
     
 }

@@ -33,6 +33,7 @@ public class ResumeDocument {
      * Initially this can be a local file path.
      */
     private String storageReference;
+    private boolean isSyncedToVectorDb;
 
     /**
      * Text extracted from PDF/DOCX.
