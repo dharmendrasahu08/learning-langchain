@@ -1,5 +1,8 @@
 package org.dsahu.langchain.learning.resume.service;
 
+import static io.qdrant.client.ConditionFactory.matchKeyword;
+import static io.qdrant.client.ConditionFactory.filter;
+import static io.qdrant.client.ConditionFactory.range;
 import static io.qdrant.client.PointIdFactory.id;
 import static io.qdrant.client.QueryFactory.nearest;
 import static io.qdrant.client.ValueFactory.value;
@@ -24,13 +27,13 @@ import dev.langchain4j.data.embedding.Embedding;
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.grpc.Collections.Distance;
 import io.qdrant.client.grpc.Collections.VectorParams;
+import io.qdrant.client.grpc.Common.Filter;
+import io.qdrant.client.grpc.Common.Range;
 import io.qdrant.client.grpc.Points.PointStruct;
 import io.qdrant.client.grpc.Points.QueryPoints;
 import io.qdrant.client.grpc.Points.ScoredPoint;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import static io.qdrant.client.ConditionFactory.matchKeyword;
-import io.qdrant.client.grpc.Common.Filter;
 
 
 @Service
@@ -114,7 +117,8 @@ public class CandidateQdrantServiceImpl
                         "name", value(profile.getName()),
                         "profileType", value(profile.getProfileType()),
                         "country", value(profile.getCountry()),
-                        "location", value(profile.getLocation())
+                        "location", value(profile.getLocation()),
+                        "yearsOfExperience", value(profile.getYearsOfExperience())
                 ))
                 .build();
     }
@@ -187,7 +191,8 @@ public class CandidateQdrantServiceImpl
                         "name", value(profile.getName()),
                         "profileType", value(profile.getProfileType()),
                         "country", value(profile.getCountry()),
-                        "location", value(profile.getLocation())
+                        "location", value(profile.getLocation()),
+                        "yearsOfExperience", value(profile.getYearsOfExperience())
                 ))
                 .build();
 
@@ -334,27 +339,37 @@ public class CandidateQdrantServiceImpl
 	                        .setWithPayload(enable(true));
 
 	        // Apply country filter only when provided
-	        if (request.country() != null
-	                && !request.country().isBlank()) {
 
-	            Filter filter = Filter.newBuilder()
-	                    .addMust(
-	                            matchKeyword(
-	                                    "country",
-	                                    request.country()))
-	                    .addMust(
-	                            matchKeyword(
-	                                    "profileType",
-	                                    request.profileType()))
-	                    .build();
+	        Filter.Builder filterBuilder = Filter.newBuilder();
 
-	            queryBuilder.setFilter(filter);
+			if (request.country() != null && !request.country().isBlank()) {
+				filterBuilder.addMust(matchKeyword("country", request.country()));
+			}
 
-	            log.info(
-	                    "Applying Qdrant country filter: {}",
-	                    request.country());
-	        }
+			if (request.profileType() != null && !request.profileType().isBlank()) {
+				
+				Filter profileTypeOrFilter =
+				        Filter.newBuilder()
+				                .addShould(matchKeyword("profileType", "HR"))
+				                .addShould(matchKeyword("profileType", "Operation"))
+				                .build();
+				filterBuilder.addMust(filter(profileTypeOrFilter));
+			}
 
+			if (request.minExperience() != null || request.maxExperience() != null) {
+				Range.Builder rangeBuilder = Range.newBuilder();
+				if (request.minExperience() != null) {
+					rangeBuilder.setGte(request.minExperience().doubleValue());
+				}
+				if (request.maxExperience() != null) {
+					rangeBuilder.setLte(request.maxExperience().doubleValue());
+				}
+
+				filterBuilder.addMust(range("yearsOfExperience", rangeBuilder.build()));
+			}
+
+	        queryBuilder.setFilter(filterBuilder.build());
+	        
 	        // Execute Qdrant search
 	        List<ScoredPoint> results =
 	                qdrantClient

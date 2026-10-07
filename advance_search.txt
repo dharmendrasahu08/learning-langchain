@@ -4,3 +4,7 @@ http://localhost:8899/api/resumes/qdrant/candidates/search?query=Java%20Spring%2
 http://localhost:8899/api/resumes/qdrant/candidates/search?query=Java%20Spring%20Boot&profileType=Software%20Engineer&country=India&limit=5
 
 http://localhost:8899/api/resumes/qdrant/candidates/search?query=Human%20Resources%20Recruitment%20Talent%20Acquisition&profileType=HR&country=UK&limit=5
+
+http://localhost:8899/api/resumes/qdrant/candidates/search?query=Human%20Resources%20Recruitment%20Talent%20Acquisition&profileType=HR&country=UK&minExperience=5&maxExperience=10&limit=5
+
+http://localhost:8899/api/resumes/qdrant/candidates/search?query=Human%20Resources %20BA&profileType=HR,BA&minExperience=2&maxExperience=10&limit=5
