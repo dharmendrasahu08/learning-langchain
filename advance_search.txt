@@ -1,3 +1,6 @@
 MetaData filtering
 http://localhost:8899/api/resumes/qdrant/candidates/search?query=Java%20Spring%20Boot&country=Germany&limit=5
 
+http://localhost:8899/api/resumes/qdrant/candidates/search?query=Java%20Spring%20Boot&profileType=Software%20Engineer&country=India&limit=5
+
+http://localhost:8899/api/resumes/qdrant/candidates/search?query=Human%20Resources%20Recruitment%20Talent%20Acquisition&profileType=HR&country=UK&limit=5

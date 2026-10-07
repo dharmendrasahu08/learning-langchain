@@ -342,6 +342,10 @@ public class CandidateQdrantServiceImpl
 	                            matchKeyword(
 	                                    "country",
 	                                    request.country()))
+	                    .addMust(
+	                            matchKeyword(
+	                                    "profileType",
+	                                    request.profileType()))
 	                    .build();
 
 	            queryBuilder.setFilter(filter);
