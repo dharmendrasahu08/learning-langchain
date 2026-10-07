@@ -80,3 +80,18 @@ RESPONSE_BODY:
   },
   "uploadedAt": "2026-09-28T08:15:09.6901243"
 }
+
+Fetch ALL
+GET http://localhost:8899/api/resumes
+Fetch By ID
+GET http://localhost:8899/api/resumes/6ab9d4b5b7a1e11fad5768ec
+Search TECH candidates
+GET /api/resumes/search?profileType=TECH
+Search candidates from India
+GET /api/resumes/search?country=India
+Search candidates with 5+ years
+GET /api/resumes/search?minExperience=5
+Combine filters
+GET /api/resumes/search?profileType=TECH&country=India&minExperience=5
+GET /api/resumes/search?skills=Java
+GET /api/resumes/search?domains=Banking

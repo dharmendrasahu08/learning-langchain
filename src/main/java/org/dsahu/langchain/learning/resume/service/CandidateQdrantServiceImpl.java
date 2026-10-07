@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.dsahu.langchain.learning.resume.dto.CandidateSearchRequest;
 import org.dsahu.langchain.learning.resume.dto.CandidateSearchResponse;
 import org.dsahu.langchain.learning.resume.entity.ResumeDocument;
 import org.dsahu.langchain.learning.resume.repository.ResumeRepository;
@@ -28,6 +29,8 @@ import io.qdrant.client.grpc.Points.QueryPoints;
 import io.qdrant.client.grpc.Points.ScoredPoint;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import static io.qdrant.client.ConditionFactory.matchKeyword;
+import io.qdrant.client.grpc.Common.Filter;
 
 
 @Service
@@ -306,6 +309,74 @@ public class CandidateQdrantServiceImpl
 		        .certifications(document.getProfile().getCertifications())
 		        .score(result.getScore())
 		        .build();
+	}
+	
+	@Override
+	public List<CandidateSearchResponse> searchCandidates(
+	        CandidateSearchRequest request) {
+
+	    log.info(
+	            "Searching candidates in Qdrant. Query: {}, country: {}, limit: {}",
+	            request.query(),
+	            request.country(),
+	            request.limit());
+
+	    Embedding queryEmbedding =
+	            candidateEmbeddingService.createQueryEmbedding(
+	                    request.query());
+
+	    try {
+	        QueryPoints.Builder queryBuilder =
+	                QueryPoints.newBuilder()
+	                        .setCollectionName(COLLECTION_NAME)
+	                        .setQuery(nearest(queryEmbedding.vectorAsList()))
+	                        .setLimit(request.limit())
+	                        .setWithPayload(enable(true));
+
+	        // Apply country filter only when provided
+	        if (request.country() != null
+	                && !request.country().isBlank()) {
+
+	            Filter filter = Filter.newBuilder()
+	                    .addMust(
+	                            matchKeyword(
+	                                    "country",
+	                                    request.country()))
+	                    .build();
+
+	            queryBuilder.setFilter(filter);
+
+	            log.info(
+	                    "Applying Qdrant country filter: {}",
+	                    request.country());
+	        }
+
+	        // Execute Qdrant search
+	        List<ScoredPoint> results =
+	                qdrantClient
+	                        .queryAsync(queryBuilder.build())
+	                        .get();
+
+	        log.info(
+	                "Qdrant search completed. Results found: {}",
+	                results.size());
+
+	        return buildSearchResponses(results);
+
+	    } catch (InterruptedException e) {
+
+	        Thread.currentThread().interrupt();
+
+	        throw new IllegalStateException(
+	                "Interrupted while searching candidates",
+	                e);
+
+	    } catch (ExecutionException e) {
+
+	        throw new IllegalStateException(
+	                "Failed to search candidates",
+	                e);
+	    }
 	}
 	
 }

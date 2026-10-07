@@ -44,6 +44,7 @@ public class CandidateEmbeddingServiceImpl
         log.debug("generateEmbedding#Creating embedding for search query: {}", query);
         Embedding embedding =
                 embeddingModel.embed(query).content();
+        log.info("Query vector: {}", embedding.vectorAsList());
         log.debug("generateEmbedding#Query embedding created successfully, dimensions: {}",
                 embedding.dimension());
         return embedding;

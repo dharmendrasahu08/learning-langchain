@@ -1,0 +1,3 @@
+MetaData filtering
+http://localhost:8899/api/resumes/qdrant/candidates/search?query=Java%20Spring%20Boot&country=Germany&limit=5
+
