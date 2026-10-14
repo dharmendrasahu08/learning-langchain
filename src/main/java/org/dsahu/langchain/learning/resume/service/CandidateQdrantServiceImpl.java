@@ -13,13 +13,14 @@ import static io.qdrant.client.WithPayloadSelectorFactory.enable;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.Arrays;
 
 import org.dsahu.langchain.learning.resume.dto.CandidateSearchRequest;
 import org.dsahu.langchain.learning.resume.dto.CandidateSearchResponse;
@@ -42,11 +43,8 @@ import io.qdrant.client.grpc.Points.Document;
 import io.qdrant.client.grpc.Points.PointStruct;
 import io.qdrant.client.grpc.Points.QueryPoints;
 import io.qdrant.client.grpc.Points.ScoredPoint;
-import io.qdrant.client.grpc.Points.Vector;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import static io.qdrant.client.grpc.Collections.VectorsConfig.*;
 
 @Service
 @RequiredArgsConstructor
@@ -473,5 +471,92 @@ public class CandidateQdrantServiceImpl
 			throw new IllegalStateException("Failed during BM25 search", e);
 		}
 	}
+	
+
+	@Override
+	public List<CandidateSearchResponse> searchCandidatesHybrid(String query, int limit) {
+
+		log.info("Hybrid search started. Query: {}, limit: {}", query, limit);
+
+		// 1. Retrieve candidates using both search strategies.
+		List<CandidateSearchResponse> denseResults = searchCandidates(query, limit);
+
+		List<CandidateSearchResponse> bm25Results = searchCandidatesBm25(query, limit);
+
+		// 2. Store candidates and their fused RRF scores.
+		Map<String, CandidateSearchResponse> candidatesById = new HashMap<>();
+
+		Map<String, Double> rrfScores = new HashMap<>();
+
+		int rrfConstant = 60;
+
+		// 3. Add dense search rankings.
+		addRrfScores(denseResults, rrfConstant, candidatesById, rrfScores);
+
+		// 4. Add BM25 search rankings.
+		addRrfScores(bm25Results, rrfConstant, candidatesById, rrfScores);
+
+		// 5. Sort by fused score and return the top candidates.
+
+		List<CandidateSearchResponse> results = new ArrayList<>(candidatesById.values());
+
+		results.sort((first, second) -> Double.compare(rrfScores.get(second.getProfileId()),
+				rrfScores.get(first.getProfileId())));
+
+		if (results.size() > limit) {
+			results = new ArrayList<>(results.subList(0, limit));
+		}
+		log.info("Hybrid search completed. Results found: {}", results.size());
+
+		// Return the actual RRF score in the response.
+		List<CandidateSearchResponse> finalResults = results.stream()
+		        .map(candidate -> {
+		            double rrfScore = rrfScores.get(candidate.getProfileId());
+
+		            return CandidateSearchResponse.builder()
+		                    .profileId(candidate.getProfileId())
+		                    .name(candidate.getName())
+		                    .profileType(candidate.getProfileType())
+		                    .profileSummary(candidate.getProfileSummary())
+		                    .yearsOfExperience(candidate.getYearsOfExperience())
+		                    .skills(candidate.getSkills())
+		                    .domains(candidate.getDomains())
+		                    .pastCompanies(candidate.getPastCompanies())
+		                    .location(candidate.getLocation())
+		                    .country(candidate.getCountry())
+		                    .qualification(candidate.getQualification())
+		                    .specialization(candidate.getSpecialization())
+		                    .institute(candidate.getInstitute())
+		                    .certifications(candidate.getCertifications())
+		                    .appliedPosition(candidate.getAppliedPosition())
+		                    .score((float) rrfScore)
+		                    .build();
+		        })
+		        .toList();
+
+		log.info("Hybrid search completed. Results found: {}", finalResults.size());
+
+		return finalResults;
+	}
+
+	private void addRrfScores(List<CandidateSearchResponse> results, int rrfConstant,
+			Map<String, CandidateSearchResponse> candidatesById, Map<String, Double> rrfScores) {
+
+		for (int i = 0; i < results.size(); i++) {
+			CandidateSearchResponse candidate = results.get(i);
+
+			if (candidate == null || candidate.getProfileId() == null) {
+				continue;
+			}
+
+			candidatesById.putIfAbsent(candidate.getProfileId(), candidate);
+
+			// RRF ranks start at 1, not 0.
+			double contribution = 1.0 / (rrfConstant + i + 1);
+
+			rrfScores.merge(candidate.getProfileId(), contribution, Double::sum);
+		}
+	}
+
 
 }

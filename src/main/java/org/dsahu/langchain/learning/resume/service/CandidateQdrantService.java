@@ -16,4 +16,5 @@ public interface CandidateQdrantService {
 	        CandidateSearchRequest request);
 	List<CandidateSearchResponse> searchCandidatesBm25(
 	        String query, int limit);
+	List<CandidateSearchResponse> searchCandidatesHybrid(String query, int limit);
 }

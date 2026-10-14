@@ -65,5 +65,14 @@ public class CandidateQdrantController {
 
 			return candidateQdrantService.searchCandidatesBm25(query, limit);
 		}
+		
+		@GetMapping("/search/hybrid")
+		public List<CandidateSearchResponse> hybridSearchCandidates(@RequestParam String query,
+				@RequestParam(defaultValue = "5") int limit) {
+
+			log.info("BM25 search request received. Query: {}, limit: {}", query, limit);
+
+			return candidateQdrantService.searchCandidatesHybrid(query, limit);
+		}
 
 }

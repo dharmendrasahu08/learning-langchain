@@ -198,3 +198,169 @@ GET http://localhost:8899/api/resumes/qdrant/candidates/search/bm25?query=AWS%20
 GET http://localhost:8899/api/resumes/qdrant/candidates/search/bm25?query=Kubernetes%20Docker&limit=5
 GET http://localhost:8899/api/resumes/qdrant/candidates/search/bm25?query=Banking%20FinTech&limit=5
 
+Hybrid Search: combination of dense vector and Sparse vector BM25
+GET http://localhost:8899/api/resumes/qdrant/candidates/search/hybrid?query=Java%20Spring%20Boot&limit=5
+[
+  {
+    "profileId": "550e8400-e29b-41d4-a716-446655440001",
+    "name": "John Doe",
+    "profileType": "TECH",
+    "profileSummary": "Senior Java developer with 8 years of experience building enterprise applications.",
+    "yearsOfExperience": 8.0,
+    "skills": [
+      "Java",
+      "Spring Boot",
+      "MongoDB",
+      "AWS",
+      "Microservices"
+    ],
+    "domains": [
+      "Banking",
+      "FinTech"
+    ],
+    "pastCompanies": [
+      "ABC Technologies",
+      "XYZ Solutions"
+    ],
+    "location": "Bengaluru",
+    "country": "India",
+    "qualification": "B.Tech",
+    "specialization": "Computer Science",
+    "institute": "ABC Institute of Technology",
+    "certifications": [
+      "AWS Certified Developer",
+      "Oracle Certified Professional Java"
+    ],
+    "appliedPosition": null,
+    "score": 0.032786883
+  },
+  {
+    "profileId": "550e8400-e29b-41d4-a716-446655440002",
+    "name": "Rahul Sharma",
+    "profileType": "TECH",
+    "profileSummary": "Senior Java developer with 7 years of experience building scalable microservices.",
+    "yearsOfExperience": 7.0,
+    "skills": [
+      "Java",
+      "Spring Boot",
+      "Microservices",
+      "Kafka",
+      "AWS"
+    ],
+    "domains": [
+      "Banking",
+      "FinTech"
+    ],
+    "pastCompanies": [
+      "Infosys",
+      "Tech Mahindra"
+    ],
+    "location": "Pune",
+    "country": "India",
+    "qualification": "B.Tech",
+    "specialization": "Computer Science",
+    "institute": "Pune Institute of Technology",
+    "certifications": [
+      "AWS Certified Developer"
+    ],
+    "appliedPosition": null,
+    "score": 0.032258064
+  },
+  {
+    "profileId": "550e8400-e29b-41d4-a716-446655440008",
+    "name": "Markus Schmidt",
+    "profileType": "TECH",
+    "profileSummary": "Backend engineer specializing in Java, distributed systems and cloud-native applications.",
+    "yearsOfExperience": 8.0,
+    "skills": [
+      "Java",
+      "Spring Boot",
+      "Kafka",
+      "Docker",
+      "Kubernetes"
+    ],
+    "domains": [
+      "Automotive",
+      "Manufacturing"
+    ],
+    "pastCompanies": [
+      "Bosch",
+      "Siemens"
+    ],
+    "location": "Berlin",
+    "country": "Germany",
+    "qualification": "M.S.",
+    "specialization": "Software Engineering",
+    "institute": "Technical University of Berlin",
+    "certifications": [
+      "Certified Kubernetes Application Developer"
+    ],
+    "appliedPosition": null,
+    "score": 0.031746034
+  },
+  {
+    "profileId": "550e8400-e29b-41d4-a716-446655440003",
+    "name": "Emily Johnson",
+    "profileType": "TECH",
+    "profileSummary": "Cloud software engineer specializing in distributed systems and backend services.",
+    "yearsOfExperience": 6.0,
+    "skills": [
+      "Java",
+      "Spring Boot",
+      "Kubernetes",
+      "Docker",
+      "AWS"
+    ],
+    "domains": [
+      "Cloud Computing",
+      "SaaS"
+    ],
+    "pastCompanies": [
+      "Amazon",
+      "Microsoft"
+    ],
+    "location": "Seattle",
+    "country": "USA",
+    "qualification": "M.S.",
+    "specialization": "Computer Science",
+    "institute": "University of Washington",
+    "certifications": [
+      "AWS Solutions Architect"
+    ],
+    "appliedPosition": null,
+    "score": 0.03125
+  },
+  {
+    "profileId": "550e8400-e29b-41d4-a716-446655440010",
+    "name": "Kenji Takahashi",
+    "profileType": "OPERATION",
+    "profileSummary": "Operations leader specializing in supply chain optimization, logistics and process improvement.",
+    "yearsOfExperience": 12.0,
+    "skills": [
+      "Supply Chain Management",
+      "Logistics",
+      "Process Improvement",
+      "Vendor Management",
+      "Operations Management"
+    ],
+    "domains": [
+      "Automotive",
+      "Logistics"
+    ],
+    "pastCompanies": [
+      "Toyota",
+      "DHL"
+    ],
+    "location": "Tokyo",
+    "country": "Japan",
+    "qualification": "MBA",
+    "specialization": "Supply Chain Management",
+    "institute": "University of Tokyo",
+    "certifications": [
+      "Lean Six Sigma Black Belt"
+    ],
+    "appliedPosition": null,
+    "score": 0.015384615
+  }
+]
+
