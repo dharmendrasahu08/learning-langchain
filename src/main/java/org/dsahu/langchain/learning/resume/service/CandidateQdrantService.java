@@ -14,4 +14,6 @@ public interface CandidateQdrantService {
 	void batchUpsertCandidates(List<ResumeDocument> documents);
 	List<CandidateSearchResponse> searchCandidates(
 	        CandidateSearchRequest request);
+	List<CandidateSearchResponse> searchCandidatesBm25(
+	        String query, int limit);
 }

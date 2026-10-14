@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
@@ -55,4 +56,14 @@ public class CandidateQdrantController {
 
 			return candidateQdrantService.searchCandidates(request);
 		}
+
+		@GetMapping("/search/bm25")
+		public List<CandidateSearchResponse> searchCandidatesBm25(@RequestParam String query,
+				@RequestParam(defaultValue = "5") int limit) {
+
+			log.info("BM25 search request received. Query: {}, limit: {}", query, limit);
+
+			return candidateQdrantService.searchCandidatesBm25(query, limit);
+		}
+
 }
