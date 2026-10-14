@@ -1,0 +1,1271 @@
+# Spring Security + JWT — Project Notes
+
+## 1. Objective
+
+We added **Spring Security + JWT-based authentication and authorization** to the LangChain4j Spring Boot project.
+
+The goal was to make the project more realistic by having:
+
+* User authentication
+* MongoDB-based users
+* User roles
+* JWT token generation
+* JWT validation
+* Stateless security
+* Protected employee APIs
+* Role-based authorization
+
+High-level architecture:
+
+```text
+Client
+  |
+  | POST /auth/login
+  | username + password
+  v
+Spring Security
+  |
+  v
+AuthenticationManager
+  |
+  v
+UserDetailsService
+  |
+  v
+MongoDB
+  |
+  | User + password + role
+  v
+Authentication successful
+  |
+  v
+JwtService
+  |
+  v
+JWT Token
+  |
+  v
+Client
+```
+
+For subsequent requests:
+
+```text
+Client
+  |
+  | Authorization: Bearer <JWT>
+  v
+JwtAuthenticationFilter
+  |
+  v
+Extract JWT
+  |
+  v
+Validate JWT
+  |
+  v
+Load UserDetails
+  |
+  v
+Create Authentication
+  |
+  v
+SecurityContextHolder
+  |
+  v
+Authorization
+  |
+  v
+Controller
+```
+
+---
+
+# 2. User Authentication Design
+
+We decided to keep application users in MongoDB.
+
+Example conceptual user document:
+
+```json
+{
+  "username": "dharmendra",
+  "password": "<BCrypt encoded password>",
+  "role": "admin"
+}
+```
+
+Possible roles:
+
+```text
+ADMIN
+NORMAL
+```
+
+The password is **not stored as plain text**.
+
+Instead, BCrypt is used:
+
+```text
+Raw password
+     |
+     v
+BCryptPasswordEncoder
+     |
+     v
+Encoded password
+     |
+     v
+MongoDB
+```
+
+During login:
+
+```text
+Entered password
+      |
+      v
+AuthenticationManager
+      |
+      v
+BCrypt comparison
+      |
+      v
+Authentication successful/failed
+```
+
+---
+
+# 3. UserDetailsService
+
+Spring Security needs a way to find a user.
+
+We implemented a MongoDB-backed `UserDetailsService`.
+
+Conceptually:
+
+```java
+@Service
+public class MongoUserDetailsService implements UserDetailsService {
+
+    @Override
+    public UserDetails loadUserByUsername(String username) {
+
+        // Find user from MongoDB
+
+        // Convert Mongo user into Spring Security UserDetails
+
+        return ...;
+    }
+}
+```
+
+Its responsibility is:
+
+```text
+username
+   |
+   v
+MongoDB
+   |
+   v
+Application User
+   |
+   v
+Spring Security UserDetails
+```
+
+Important:
+
+`UserDetailsService` does **not generate JWT**.
+
+Its job is primarily to retrieve user information needed by Spring Security.
+
+---
+
+# 4. AuthenticationManager
+
+For login:
+
+```http
+POST /auth/login
+```
+
+with:
+
+```json
+{
+  "username": "dharmendra",
+  "password": "..."
+}
+```
+
+The controller passes the credentials to:
+
+```java
+AuthenticationManager
+```
+
+Flow:
+
+```text
+AuthController
+     |
+     v
+AuthenticationManager
+     |
+     v
+DaoAuthenticationProvider
+     |
+     v
+UserDetailsService
+     |
+     v
+MongoDB
+```
+
+Spring Security then verifies:
+
+```text
+Username exists?
+        +
+Password matches?
+        |
+        v
+Authentication successful
+```
+
+We observed this in the logs:
+
+```text
+DaoAuthenticationProvider : Authenticated user
+```
+
+This confirmed that **username/password authentication was working**.
+
+---
+
+# 5. JWT Generation
+
+After successful authentication, we generate a JWT using our `JwtService`.
+
+Conceptually:
+
+```text
+Authentication successful
+        |
+        v
+JwtService
+        |
+        v
+JWT
+```
+
+The JWT we obtained contained information similar to:
+
+```json
+{
+  "sub": "dharmendra",
+  "iat": 1789957090,
+  "exp": 1789960690
+}
+```
+
+Where:
+
+* `sub` = subject / username
+* `iat` = issued-at time
+* `exp` = expiration time
+
+Important observation:
+
+Our JWT did **not contain the role**.
+
+That is okay for our current design because the role can be retrieved from MongoDB through `UserDetailsService` when the JWT is processed.
+
+---
+
+# 6. Login Endpoint
+
+Our login endpoint is:
+
+```http
+POST /auth/login
+```
+
+Example:
+
+```json
+{
+  "username": "dharmendra",
+  "password": "..."
+}
+```
+
+Successful flow:
+
+```text
+POST /auth/login
+       |
+       v
+AuthController
+       |
+       v
+AuthenticationManager
+       |
+       v
+UserDetailsService
+       |
+       v
+MongoDB
+       |
+       v
+Password verification
+       |
+       v
+Authentication successful
+       |
+       v
+JwtService
+       |
+       v
+JWT returned to client
+```
+
+At this point the client stores/uses the JWT for subsequent protected requests.
+
+---
+
+# 7. Stateless Security
+
+JWT authentication is configured as stateless.
+
+Conceptually:
+
+```java
+.sessionManagement(session ->
+    session.sessionCreationPolicy(
+        SessionCreationPolicy.STATELESS
+    )
+)
+```
+
+Meaning:
+
+```text
+Request 1
+   |
+   | JWT
+   v
+Authenticate request
+
+Request 2
+   |
+   | JWT
+   v
+Authenticate request
+
+Request 3
+   |
+   | JWT
+   v
+Authenticate request
+```
+
+The server does not maintain a traditional HTTP login session.
+
+Every protected request carries its authentication information through the JWT.
+
+---
+
+# 8. Security Configuration
+
+We configured Spring Security using a `SecurityFilterChain`.
+
+Important concepts:
+
+```java
+.authorizeHttpRequests(...)
+```
+
+controls authorization.
+
+For example:
+
+```java
+.requestMatchers("/auth/**").permitAll()
+```
+
+means login/authentication endpoints can be accessed without authentication.
+
+And:
+
+```java
+.requestMatchers("/employees/**").authenticated()
+```
+
+means employee APIs require an authenticated user.
+
+We also configured:
+
+```java
+.csrf(csrf -> csrf.disable())
+```
+
+for our stateless REST API design.
+
+And:
+
+```java
+.sessionManagement(...)
+```
+
+with:
+
+```text
+SessionCreationPolicy.STATELESS
+```
+
+---
+
+# 9. The 403 Forbidden Problem
+
+This was the most important debugging exercise.
+
+We had successfully obtained a JWT.
+
+Then we called:
+
+```http
+GET /employees/DKS002
+Authorization: Bearer <JWT>
+```
+
+But the response was:
+
+```text
+403 Forbidden
+```
+
+Initially this was confusing because:
+
+```text
+Login worked
+JWT was generated
+JWT was sent
+But protected endpoint failed
+```
+
+---
+
+# 10. Important Debugging Observation
+
+We checked the Spring Security logs.
+
+During login we saw:
+
+```text
+Secured POST /auth/login
+```
+
+and:
+
+```text
+DaoAuthenticationProvider : Authenticated user
+```
+
+So login was working.
+
+But for:
+
+```text
+GET /employees/DKS002
+```
+
+we saw:
+
+```text
+Securing GET /employees/DKS002
+```
+
+followed by:
+
+```text
+AnonymousAuthenticationFilter :
+Set SecurityContextHolder to anonymous
+```
+
+and eventually:
+
+```text
+Http403ForbiddenEntryPoint :
+Pre-authenticated entry point called. Rejecting access
+```
+
+This was the key clue.
+
+Spring Security was treating the request as:
+
+```text
+anonymous
+```
+
+instead of:
+
+```text
+authenticated user
+```
+
+---
+
+# 11. Root Cause of the 403
+
+The JWT filter existed, but it was **not registered in the Spring Security filter chain**.
+
+This is a very important Spring Security lesson:
+
+> Creating a `JwtAuthenticationFilter` class is not enough.
+
+Spring Security must actually execute that filter for incoming requests.
+
+We therefore needed to register it:
+
+```java
+.addFilterBefore(
+    jwtAuthenticationFilter,
+    UsernamePasswordAuthenticationFilter.class
+)
+```
+
+---
+
+# 12. JwtAuthenticationFilter
+
+We created a filter extending:
+
+```java
+OncePerRequestFilter
+```
+
+Conceptually:
+
+```java
+@Component
+public class JwtAuthenticationFilter
+        extends OncePerRequestFilter {
+
+    private final JwtService jwtService;
+    private final UserDetailsService userDetailsService;
+
+    // constructor
+
+    @Override
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain)
+            throws ServletException, IOException {
+
+        // Read Authorization header
+
+        // Extract Bearer token
+
+        // Validate JWT
+
+        // Extract username
+
+        // Load UserDetails
+
+        // Create Authentication
+
+        // Put Authentication into SecurityContext
+
+        filterChain.doFilter(request, response);
+    }
+}
+```
+
+---
+
+# 13. Why `@Component` Was Important
+
+We initially encountered an error because:
+
+```text
+jwtAuthenticationFilter
+```
+
+was not available to `SecurityConfig`.
+
+The solution was to make the filter a Spring bean:
+
+```java
+@Component
+public class JwtAuthenticationFilter
+        extends OncePerRequestFilter {
+}
+```
+
+Now Spring creates the filter and can inject it into `SecurityConfig`.
+
+For example:
+
+```java
+private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+public SecurityConfig(
+        JwtAuthenticationFilter jwtAuthenticationFilter) {
+
+    this.jwtAuthenticationFilter =
+            jwtAuthenticationFilter;
+}
+```
+
+This teaches an important Spring concept:
+
+```text
+@Component
+   |
+   v
+Spring IoC Container
+   |
+   v
+Creates JwtAuthenticationFilter bean
+   |
+   v
+Injects into SecurityConfig
+```
+
+---
+
+# 14. Registering the JWT Filter
+
+This fixed the main problem.
+
+We added:
+
+```java
+.addFilterBefore(
+    jwtAuthenticationFilter,
+    UsernamePasswordAuthenticationFilter.class
+)
+```
+
+The resulting conceptual security chain became:
+
+```text
+HTTP Request
+     |
+     v
+JwtAuthenticationFilter
+     |
+     v
+UsernamePasswordAuthenticationFilter
+     |
+     v
+Authorization filters
+     |
+     v
+Controller
+```
+
+The exact complete Spring Security chain contains many filters, but our important application-specific filter is the JWT filter.
+
+---
+
+# 15. What JwtAuthenticationFilter Actually Does
+
+The filter has several responsibilities.
+
+### Step 1 — Read header
+
+It checks:
+
+```http
+Authorization: Bearer eyJ...
+```
+
+### Step 2 — Extract token
+
+From:
+
+```text
+Bearer eyJ...
+```
+
+it extracts:
+
+```text
+eyJ...
+```
+
+### Step 3 — Extract username
+
+The JWT contains:
+
+```json
+{
+  "sub": "dharmendra"
+}
+```
+
+So the filter gets:
+
+```text
+dharmendra
+```
+
+### Step 4 — Load user
+
+The filter calls:
+
+```java
+userDetailsService.loadUserByUsername(username)
+```
+
+which eventually gets the user from MongoDB.
+
+### Step 5 — Validate JWT
+
+`JwtService` checks that the token is valid and belongs to the expected user.
+
+### Step 6 — Create Authentication
+
+Spring Security needs an `Authentication` object.
+
+Conceptually:
+
+```text
+JWT
+ |
+ v
+username
+ |
+ v
+UserDetails
+ |
+ v
+Authentication
+```
+
+### Step 7 — Put it into SecurityContext
+
+This is critical:
+
+```java
+SecurityContextHolder
+```
+
+is populated with the authenticated user.
+
+Conceptually:
+
+```text
+SecurityContextHolder
+       |
+       v
+Authentication
+       |
+       +---- username
+       |
+       +---- authorities
+```
+
+### Step 8 — Continue request
+
+Finally:
+
+```java
+filterChain.doFilter(request, response);
+```
+
+passes the request to the remaining filters/controller.
+
+---
+
+# 16. SecurityContextHolder
+
+One of the most important Spring Security concepts learned during this debugging.
+
+For the current request, Spring Security keeps authentication information in:
+
+```java
+SecurityContextHolder
+```
+
+Conceptually:
+
+```text
+JWT
+ |
+ v
+JwtAuthenticationFilter
+ |
+ v
+Authentication
+ |
+ v
+SecurityContextHolder
+ |
+ v
+Authorization
+ |
+ v
+Controller
+```
+
+Before our JWT filter was correctly registered:
+
+```text
+SecurityContextHolder
+        |
+        v
+Anonymous
+```
+
+After fixing the filter:
+
+```text
+SecurityContextHolder
+        |
+        v
+Authenticated User
+```
+
+This explains why the endpoint changed from `403` to working correctly.
+
+---
+
+# 17. Authentication vs Authorization
+
+We also established an important distinction.
+
+### Authentication
+
+Answers:
+
+> Who are you?
+
+Example:
+
+```text
+dharmendra
+```
+
+Authentication happens through:
+
+```text
+username
++
+password
+```
+
+during login, and subsequently through:
+
+```text
+JWT
+```
+
+for protected requests.
+
+### Authorization
+
+Answers:
+
+> What are you allowed to access?
+
+For example:
+
+```text
+ADMIN
+NORMAL
+```
+
+So:
+
+```text
+Authentication
+      =
+Who are you?
+
+Authorization
+      =
+What can you do?
+```
+
+---
+
+# 18. Roles and Authorities
+
+Our users have roles such as:
+
+```text
+ADMIN
+NORMAL
+```
+
+Spring Security represents permissions through:
+
+```java
+GrantedAuthority
+```
+
+A role:
+
+```text
+ADMIN
+```
+
+is conventionally represented as:
+
+```text
+ROLE_ADMIN
+```
+
+Likewise:
+
+```text
+NORMAL
+```
+
+becomes:
+
+```text
+ROLE_NORMAL
+```
+
+This is important when using:
+
+```java
+hasRole("ADMIN")
+```
+
+because Spring internally expects:
+
+```text
+ROLE_ADMIN
+```
+
+---
+
+# 19. `hasRole()` vs `hasAuthority()`
+
+Important distinction:
+
+```java
+.hasRole("ADMIN")
+```
+
+means conceptually:
+
+```text
+ROLE_ADMIN
+```
+
+Whereas:
+
+```java
+.hasAuthority("ROLE_ADMIN")
+```
+
+checks the authority explicitly.
+
+Example:
+
+```java
+.requestMatchers("/admin/**")
+    .hasRole("ADMIN")
+```
+
+and:
+
+```java
+.requestMatchers("/employees/**")
+    .hasAnyRole("ADMIN", "NORMAL")
+```
+
+---
+
+# 20. Final Request Flow
+
+Our complete authentication flow is now:
+
+```text
+                 LOGIN
+                   |
+                   v
+        POST /auth/login
+                   |
+                   v
+            AuthController
+                   |
+                   v
+        AuthenticationManager
+                   |
+                   v
+        DaoAuthenticationProvider
+                   |
+                   v
+          UserDetailsService
+                   |
+                   v
+               MongoDB
+                   |
+                   v
+          Password verification
+                   |
+                   v
+       Authentication successful
+                   |
+                   v
+              JwtService
+                   |
+                   v
+                JWT
+                   |
+                   v
+              Client
+```
+
+Then:
+
+```text
+                 PROTECTED API
+                       |
+                       v
+           GET /employees/DKS002
+                       |
+                       v
+        Authorization: Bearer <JWT>
+                       |
+                       v
+            JwtAuthenticationFilter
+                       |
+                       v
+                 Extract JWT
+                       |
+                       v
+                Validate JWT
+                       |
+                       v
+               Extract username
+                       |
+                       v
+              UserDetailsService
+                       |
+                       v
+                    MongoDB
+                       |
+                       v
+             Create Authentication
+                       |
+                       v
+              SecurityContextHolder
+                       |
+                       v
+                 Authorization
+                       |
+              +--------+--------+
+              |                 |
+          Authorized         Not allowed
+              |                 |
+              v                 v
+         Controller            403
+              |
+              v
+        Employee response
+```
+
+---
+
+# 21. Final Security Architecture
+
+Our project now conceptually looks like:
+
+```text
+Spring Boot Application
+│
+├── Authentication
+│   ├── AuthController
+│   ├── AuthenticationManager
+│   ├── UserDetailsService
+│   └── MongoDB User Collection
+│
+├── JWT
+│   ├── JwtService
+│   ├── JwtAuthenticationFilter
+│   └── JWT Token
+│
+├── Authorization
+│   ├── SecurityFilterChain
+│   ├── SecurityContextHolder
+│   ├── Authentication
+│   └── GrantedAuthority / Roles
+│
+├── Business APIs
+│   └── EmployeeController
+│
+└── LangChain4j
+    ├── AI Services
+    ├── Chat Memory
+    ├── Tools
+    └── Structured Output
+```
+
+---
+
+# 22. Most Important Lessons From This Error
+
+### Lesson 1
+
+Generating a JWT does **not** automatically authenticate future requests.
+
+The JWT must be processed on every protected request.
+
+### Lesson 2
+
+Creating:
+
+```java
+JwtAuthenticationFilter
+```
+
+is not enough.
+
+It must be registered in the Spring Security filter chain:
+
+```java
+.addFilterBefore(
+    jwtAuthenticationFilter,
+    UsernamePasswordAuthenticationFilter.class
+)
+```
+
+### Lesson 3
+
+The JWT filter must establish the authentication:
+
+```text
+JWT
+ ↓
+Authentication
+ ↓
+SecurityContextHolder
+```
+
+### Lesson 4
+
+A `403` should be debugged by checking whether Spring sees the request as:
+
+```text
+Anonymous
+```
+
+or:
+
+```text
+Authenticated
+```
+
+The logs were extremely useful here.
+
+### Lesson 5
+
+Authentication and authorization are different:
+
+```text
+Authentication → Who are you?
+Authorization  → What are you allowed to do?
+```
+
+### Lesson 6
+
+`UserDetailsService` is responsible for loading user information.
+
+It is not responsible for generating JWTs.
+
+### Lesson 7
+
+`JwtService` and `JwtAuthenticationFilter` have different responsibilities:
+
+```text
+JwtService
+    ↓
+JWT creation + JWT validation + claims
+
+JwtAuthenticationFilter
+    ↓
+HTTP request processing + SecurityContext authentication
+```
+
+### Lesson 8
+
+`SecurityContextHolder` is the bridge between authentication and authorization.
+
+```text
+JWT
+ ↓
+Filter
+ ↓
+Authentication
+ ↓
+SecurityContextHolder
+ ↓
+Authorization
+```
+
+---
+
+# 23. Current Status
+
+At the end of this debugging session:
+
+```text
+✅ MongoDB user authentication
+✅ BCrypt password handling
+✅ UserDetailsService
+✅ AuthenticationManager
+✅ Login endpoint
+✅ JWT generation
+✅ JWT received successfully
+✅ JwtAuthenticationFilter
+✅ JWT filter registered in SecurityFilterChain
+✅ Stateless session configuration
+✅ SecurityContext authentication
+✅ Protected employee API
+✅ 403 issue fixed
+```
+
+The JWT/security foundation is now working.
+
+---
+
+# 24. Recommended Next Security Learning Step
+
+The next thing to understand deeply is:
+
+```text
+SecurityContextHolder
+       ↓
+Authentication
+       ↓
+GrantedAuthority
+       ↓
+hasRole()
+       ↓
+hasAuthority()
+       ↓
+ADMIN vs NORMAL
+```
+
+After that, we can implement:
+
+```text
+/admin/**       → ADMIN only
+
+/employees/**   → ADMIN + NORMAL
+
+/public/**      → No authentication
+```
+
+That will complete the **authentication + authorization** part of the project before we move deeper into the LangChain4j/RAG/Qdrant side.

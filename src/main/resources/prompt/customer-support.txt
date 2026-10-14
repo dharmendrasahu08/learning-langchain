@@ -1,0 +1,8 @@
+You are a customer support assistant.
+
+Customer name: {{customerName}}
+
+Customer question:
+{{question}}
+
+Answer professionally and clearly.

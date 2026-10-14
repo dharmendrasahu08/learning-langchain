@@ -1,0 +1,200 @@
+MetaData filtering
+GET http://localhost:8899/api/resumes/qdrant/candidates/search?query=Java%20Spring%20Boot&country=Germany&limit=5
+GET http://localhost:8899/api/resumes/qdrant/candidates/search?query=Java%20Spring%20Boot&profileType=Software%20Engineer&country=India&limit=5
+GET http://localhost:8899/api/resumes/qdrant/candidates/search?query=Human%20Resources%20Recruitment%20Talent%20Acquisition&profileType=HR&country=UK&limit=5
+GET http://localhost:8899/api/resumes/qdrant/candidates/search?query=Human%20Resources%20Recruitment%20Talent%20Acquisition&profileType=HR&country=UK&minExperience=5&maxExperience=10&limit=5
+GET http://localhost:8899/api/resumes/qdrant/candidates/search?query=Human%20Resources %20BA&profileType=HR,BA&minExperience=2&maxExperience=10&limit=5
+
+Creating Sparse vector using powershell collection candidate_profiles
+I faced issue while creating sparse vector using qdrant console that reason created by powershell
+
+$body = @'
+{
+  "vectors": {
+    "dense": {
+      "size": 1536,
+      "distance": "Cosine"
+    }
+  },
+  "sparse_vectors": {
+    "bm25": {
+      "modifier": "idf"
+    }
+  },
+  "on_disk_payload": true
+}
+'@
+
+Invoke-RestMethod -Method Put `
+  -Uri "http://localhost:6333/collections/candidate_profiles" `
+  -ContentType "application/json" `
+  -Body $body
+  
+  
+get Sparse from qdrant console
+POST /collections/candidate_profiles/points
+{
+  "ids": [
+    "13ad45b7-2f98-367f-8177-70fae0b6f2e0"
+  ],
+  "with_payload": true,
+  "with_vector": true
+}
+
+response:
+{
+  "result": [
+    {
+      "id": "13ad45b7-2f98-367f-8177-70fae0b6f2e0",
+      "payload": {},
+      "vector": {
+        "dense": ["..."],
+        "bm25": {
+          "indices": ["..."],
+          "values": ["..."]
+        }
+      }
+    }
+  ]
+}
+
+Bruno Search Query
+GET http://localhost:8899/api/resumes/qdrant/candidates/search/bm25?query=Java%20Spring%20Boot&limit=5
+Response:
+[
+  {
+    "profileId": "550e8400-e29b-41d4-a716-446655440001",
+    "name": "John Doe",
+    "profileType": "TECH",
+    "profileSummary": "Senior Java developer with 8 years of experience building enterprise applications.",
+    "yearsOfExperience": 8.0,
+    "skills": [
+      "Java",
+      "Spring Boot",
+      "MongoDB",
+      "AWS",
+      "Microservices"
+    ],
+    "domains": [
+      "Banking",
+      "FinTech"
+    ],
+    "pastCompanies": [
+      "ABC Technologies",
+      "XYZ Solutions"
+    ],
+    "location": "Bengaluru",
+    "country": "India",
+    "qualification": "B.Tech",
+    "specialization": "Computer Science",
+    "institute": "ABC Institute of Technology",
+    "certifications": [
+      "AWS Certified Developer",
+      "Oracle Certified Professional Java"
+    ],
+    "appliedPosition": null,
+    "score": 1.7642976
+  },
+  {
+    "profileId": "550e8400-e29b-41d4-a716-446655440002",
+    "name": "Rahul Sharma",
+    "profileType": "TECH",
+    "profileSummary": "Senior Java developer with 7 years of experience building scalable microservices.",
+    "yearsOfExperience": 7.0,
+    "skills": [
+      "Java",
+      "Spring Boot",
+      "Microservices",
+      "Kafka",
+      "AWS"
+    ],
+    "domains": [
+      "Banking",
+      "FinTech"
+    ],
+    "pastCompanies": [
+      "Infosys",
+      "Tech Mahindra"
+    ],
+    "location": "Pune",
+    "country": "India",
+    "qualification": "B.Tech",
+    "specialization": "Computer Science",
+    "institute": "Pune Institute of Technology",
+    "certifications": [
+      "AWS Certified Developer"
+    ],
+    "appliedPosition": null,
+    "score": 1.7145716
+  },
+  {
+    "profileId": "550e8400-e29b-41d4-a716-446655440008",
+    "name": "Markus Schmidt",
+    "profileType": "TECH",
+    "profileSummary": "Backend engineer specializing in Java, distributed systems and cloud-native applications.",
+    "yearsOfExperience": 8.0,
+    "skills": [
+      "Java",
+      "Spring Boot",
+      "Kafka",
+      "Docker",
+      "Kubernetes"
+    ],
+    "domains": [
+      "Automotive",
+      "Manufacturing"
+    ],
+    "pastCompanies": [
+      "Bosch",
+      "Siemens"
+    ],
+    "location": "Berlin",
+    "country": "Germany",
+    "qualification": "M.S.",
+    "specialization": "Software Engineering",
+    "institute": "Technical University of Berlin",
+    "certifications": [
+      "Certified Kubernetes Application Developer"
+    ],
+    "appliedPosition": null,
+    "score": 1.6183836
+  },
+  {
+    "profileId": "550e8400-e29b-41d4-a716-446655440003",
+    "name": "Emily Johnson",
+    "profileType": "TECH",
+    "profileSummary": "Cloud software engineer specializing in distributed systems and backend services.",
+    "yearsOfExperience": 6.0,
+    "skills": [
+      "Java",
+      "Spring Boot",
+      "Kubernetes",
+      "Docker",
+      "AWS"
+    ],
+    "domains": [
+      "Cloud Computing",
+      "SaaS"
+    ],
+    "pastCompanies": [
+      "Amazon",
+      "Microsoft"
+    ],
+    "location": "Seattle",
+    "country": "USA",
+    "qualification": "M.S.",
+    "specialization": "Computer Science",
+    "institute": "University of Washington",
+    "certifications": [
+      "AWS Solutions Architect"
+    ],
+    "appliedPosition": null,
+    "score": 1.3784178
+  }
+]
+
+
+GET http://localhost:8899/api/resumes/qdrant/candidates/search/bm25?query=AWS%20Certified%20Developer&limit=5
+GET http://localhost:8899/api/resumes/qdrant/candidates/search/bm25?query=Kubernetes%20Docker&limit=5
+GET http://localhost:8899/api/resumes/qdrant/candidates/search/bm25?query=Banking%20FinTech&limit=5
+
