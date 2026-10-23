@@ -1,0 +1,9 @@
+Start prometheus and grafana monitoring tool
+docker compose -f docker-compose-prometheus-grafana.yml up -d
+once the container started
+
+prometheus
+http://localhost:9090/targets
+
+grafana
+http://localhost:3000/
